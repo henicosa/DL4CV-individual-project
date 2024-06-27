@@ -1,0 +1,6 @@
+data
+dlcv.egg-info
+__pycache__
+*.pyc
+start.sh
+*.ipynb

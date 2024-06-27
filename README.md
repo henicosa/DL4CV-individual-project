@@ -1,6 +1,3 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-24ddc0f5d75046c5622901739e7c5dd533143b0c8e959d652212380cedb1ea36.svg)](https://classroom.github.com/a/GVYBQ-r3)
-This is a suggested outline. You are free in your design. You will need to create the project structure and move the file `model.py` to its proper location.
-
 # 1. Installation Instructions
 
 ## Kaggle
@@ -8,7 +5,7 @@ This is a suggested outline. You are free in your design. You will need to creat
 ```python
 token = "github_pat_secret"
 user = "BUW-CV"
-repo_name = "dlcv24-assignment-4-henicosa"
+repo_name = "dlcv24-individual-final-project-henicosa"
 url = f"https://{user}:{token}@github.com/{user}/{repo_name}.git"
 !pip install git+{url}
 ```
@@ -46,15 +43,10 @@ pip install -e .
 
 # 2. Link to Single Kaggle Notebook
 
-- https://www.kaggle.com/code/henicosa/dl4cv-ass4/edit
+- https://www.kaggle.com/code/henicosa/dl4cv-individual-project/edit/
 
-# 3. Resources
 
-- https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html
-- https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocotools/coco.py
-- https://github.com/Torky24/TexBig---Object-Detection/tree/main
-
-# 4. How to run a training
+# 3. How to run a training
 
 Running a training will automatically store the used set of hyperparameters as a `<run_name>.yaml` in the models directory. It will also store the model as `<run_name>.pth` in the same directory and the accuracy in each epoch as `<run_name>.csv` int the results directory.
 
@@ -66,7 +58,7 @@ Use the function `execute_training(run_name, options)` to initiate the training 
 
 You can also pass the path to an existing configuration file to the function `execute_training_from_config_file(run_name, filepath)` to initate a training. The format of the file is decribed in the next section.
 
-# 5. How to configure different trainings
+# 4. How to configure different trainings
 
 This is the default configuration in the YAML format. You can include any option in your own configuration file for a training.
 
@@ -98,73 +90,137 @@ SYSTEM:
 
 It is divided in six categories: Data, Model, Training, Augmentation, Output and System. The next section describes the configurable hyper-parametes in detail.
 
-# 6. Overview of available configurable hyper-parameters
+# 5. Overview of available configurable hyper-parameters
 
-## Data
+Below, each configuration option is explained in detail along with possible input values and their effects.
 
-This section contains hyper-parameters related to reading and splitting the data.
+## DATA
 
-- `DATA_ROOT` (default: `data`): The root directory of the dataset.
+This section contains hyper-parameters related to the dataset and batch processing.
 
-- `BATCH_SIZE` (default: `64`): The batch size for training and evaluation.
+- `ROOT` (default: `"data"`): Path to the root directory where the dataset is stored.
+  - **Type**: String
+  - **Effect**: Specifies the directory containing the dataset to be used for training and evaluation.
 
-## Model
+- `BATCH_SIZE` (default: `2`): Number of samples per batch during training.
+  - **Type**: Integer
+  - **Effect**: Controls the number of images processed in parallel during each training iteration. Larger batch sizes may improve training stability but require more memory.
+
+## MODEL
 
 This section contains hyper-parameters related to the model's architecture and initialization.
 
-- `PRETRAINED_WEIGHtS` (default: `None`): Path to a file with pretrained weights to initialize the model. If not specified, the model will start with random weights.
+- `PRETRAINED_WEIGHTS` (default: `false`): Whether to load pretrained weights for the model.
+  - **Type**: Boolean
+  - **Effect**: If `true`, the model will be initialized with weights pretrained on a large dataset (e.g., ImageNet), which can speed up convergence and improve performance.
 
-- `FREEZE_LAYERS` (default: `0`): A comma-separated list of layer names to freeze during training. This means these layers' weights will not be updated.
+- `FREEZE_LAYERS` (default: `"0"`): A comma-separated list of layer names to freeze during training. This means these layers' weights will not be updated.
+  - **Type**: String
+  - **Effect**: Freezes the specified layers, preventing their weights from being updated during training. Useful for transfer learning to retain pretrained features.
 
-## Model
+## TRAINING
 
-This section contains hyper-parameters influencing only the training process.
+This section contains hyper-parameters related to the training process.
+
+- `EPOCHS` (default: `3`): Number of epochs to train the model.
+  - **Type**: Integer
+  - **Effect**: Determines how many times the entire dataset is passed through the model during training. More epochs can lead to better performance but increase training time.
+
+- `BASE_LR` (default: `0.001`): Base learning rate for the optimizer.
+  - **Type**: Float
+  - **Effect**: Controls the step size at each iteration while moving towards a minimum of the loss function. A lower value makes the training process slower and more stable, while a higher value speeds up training but may cause instability.
+
+- `STRATIFICATION_RATES` (default: `false`): Whether to use stratified sampling during training.
+  - **Type**: Boolean
+  - **Effect**: If `true`, ensures that each batch has a balanced representation of different classes, which can be important for imbalanced datasets.
+
+- `MOMENTUM` (default: `0.09`): Momentum factor for the optimizer.
+  - **Type**: Float
+  - **Effect**: Accelerates gradient vectors in the correct direction, leading to faster convergence. Only used in combination with SGD optimizer.
+
+- `WEIGHT_DECAY` (default: `0.001`): Weight decay (L2 penalty) for the optimizer.
+  - **Type**: Float
+  - **Effect**: Prevents overfitting by penalizing large weights in the model, effectively acting as regularization.
+
+- `OPTIMIZER` (default: `"SGD"`): The type of optimizer to use for training.
+  - **Type**: String
+  - **Possible Values**: `"SGD"`, `"Adam"`, `"AdamW"`
+  - **Effect**: Determines the optimization algorithm used for updating model weights. Different optimizers have various convergence properties and performance characteristics.
+
+- `BACKBONE` (default: `"mobilenet_v2"`): The backbone network to be used in the model.
+  - **Type**: String
+  - **Possible Values**: `"mobilenet_v2"`, `"resnet50"`, `"resnet101"`
+  - **Effect**: The backbone network extracts features from images. Choosing a different backbone can affect the model’s performance and computational requirements.
+
+## AUGMENTATION
+
+This section contains hyper-parameters related to data augmentation techniques applied during training.
+
+- `HORIZONTAL_FLIP_PROB` (default: `0.0`): Probability of applying horizontal flip augmentation.
+  - **Type**: Float
+  - **Effect**: Randomly flips images horizontally during training with the specified probability, helping to generalize the model to different orientations.
 
 
-- `EPOCHS` (default: `3`): The number of epochs to train the model.
+## OUTPUT
 
-- `BASE_LR` (default: `0.001`): The base learning rate for the optimizer.
+This section contains hyper-parameters related to the output of the training process.
 
-## Model
+- `OUTPUT_PATH` (default: `"output"`): Directory where output files (e.g., models, logs) will be saved.
+  - **Type**: String
+  - **Effect**: Specifies the path for saving training artifacts, including trained models and performance logs.
 
-This section contains hyper-parameters for preparing the data before the training process.
+## SYSTEM
 
-- `HORIZONTAL_FLIP_PROB` (default: `0.0`): The probability of applying a horizontal flip to images during training for data augmentation. A value of 0 means no horizontal flip.
+This section contains hyper-parameters related to system settings and configurations.
 
-## Output
+- `NO_CUDA` (default: `false`): Whether to disable CUDA (GPU) usage.
+  - **Type**: Boolean
+  - **Effect**: If `true`, forces the use of CPU even if a GPU is available. Useful for debugging or running on systems without GPUs.
 
-This section controls the output path values.
-
-- `RESULTS_CSV` (default: `results`): The directory to save the CSV file containing training results.
-
-- `SAVE_MODEL_PATH` (default: `saved_models`): The directory to save the trained model.
-
-## System
-
-This section contains hyper-parameters controlling how the host system is used during training.
-
-- `NO_CUDA` (default: `False`): Disable CUDA even if available, forcing the use of CPU.
+- `DO_EARLY_STOPPING` (default: `false`): Whether to apply early stopping during training.
+  - **Type**: Boolean
+  - **Effect**: If `true`, training will be stopped early if the model’s performance on the validation set does not improve for a specified number of epochs, preventing overfitting and saving time.
 
 
-# 7. Visualisations
 
-After each run, a visualisation of the mean average precision over the epochs is plotted.
+# 6. Visualisations
 
-![Plot](doc/training_graph.png)
+After each run, a visualisation of the mean average precision over the epochs is plotted and saved in the perfomance directory together with the raw data in the csv format.
 
-After each run, two images with the detected bounding boxes are generated from the training set for reference. They are also saved in the model directory. Each category produces differently colored bounding boxes.
+![Plot](doc/AdamW.png)
 
-![Plot](doc/bboxes.png)
+After each run, three images with the detected bounding boxes are generated from the training set for reference. They are also saved in the output directory. 
 
-# 8. Succesfull Training
+![Plot](doc/bbox.png)
 
-A succesfull training run was submitted with a mAP of over 40% was submitted under the university username `viji5369` on the evalAI CISOL leaderboard.
+Please refer to this table to attribute the category to the bounding box displayed in the visualisation.
 
-# License
+| ID  | Name   | Color   |
+| :-- | :----- | :------ |
+| 1   | table  | red     |
+| 2   | row    | magenta |
+| 3   | cell   | green   |
+| 4   | header | orange  |
+| 5   | column | cyan    |
+
+
+# 7. Experiments
+
+## 7.1. Optimizer
+
+- [Link to Experiment 1](https://www.kaggle.com/code/henicosa/dl4cv-individual-project?scriptVersionId=185793029)
+
+In this experiment three different optimizers were compared: SDG, Adam and AdamW.
+
+![Plot](doc/exp1.png)
+
+The training run `AdamW` was submitted under the university username `viji5369` on the evalAI CISOL leaderboard and scored mAP = 50.16%.
+
+# 8. License
 
 Please note that no license was provided for the assignment. My contributions to this project are licensed under the MIT License.
 
-# Disclaimer: AI Usage
+# 9. Disclaimer: AI Usage
 
 Following generative AI tools were used to solve the assignment:
 

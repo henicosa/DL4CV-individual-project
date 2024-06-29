@@ -38,7 +38,7 @@ def get_model(num_classes, chosen_backbone):
         resnet_net = torchvision.models.resnet101(pretrained=True)
         modules = list(resnet_net.children())[:-2]
         backbone = nn.Sequential(*modules)
-        backbone.out_channels = 512
+        backbone.out_channels = 2048
         anchor_generator = AnchorGenerator(
             sizes=((32, 64, 128, 256, 512),),
             aspect_ratios=((0.5, 1.0, 2.0),)

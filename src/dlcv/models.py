@@ -22,7 +22,7 @@ def get_model(num_classes, chosen_backbone):
         # ratios.
         anchor_generator = AnchorGenerator(
             sizes=((32, 64, 128, 256, 512),),
-            aspect_ratios=((0.5, 1.0, 2.0),)
+            aspect_ratios=(aspect_ratios,)
         )
         # Feature maps to perform RoI cropping.
         # If backbone returns a Tensor, `featmap_names` is expected to
@@ -41,7 +41,7 @@ def get_model(num_classes, chosen_backbone):
         backbone.out_channels = 2048
         anchor_generator = AnchorGenerator(
             sizes=((32, 64, 128, 256, 512),),
-            aspect_ratios=((0.5, 1.0, 2.0),)
+            aspect_ratios=(aspect_ratios,)
         )
         # Feature maps to perform RoI cropping.
         # If backbone returns a Tensor, `featmap_names` is expected to
@@ -66,7 +66,7 @@ def get_model(num_classes, chosen_backbone):
         # aspect ratios
         anchor_generator = AnchorGenerator(
             sizes=((32, 64, 128, 256, 512),),
-            aspect_ratios=((0.5, 1.0, 2.0),)
+            aspect_ratios=(aspect_ratios,)
         )
         
         # let's define what are the feature maps that we will

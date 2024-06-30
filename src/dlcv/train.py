@@ -94,8 +94,13 @@ def main(args):
 
     chosen_backbone = args.backbone.lower()
 
+    if args.aspect_ratios:
+        aspect_ratios = tuple(args.aspect_ratios)
+    else:
+        aspect_ratios = (0.5, 1.0, 2.0)
+
     # get the model using our helper function
-    model = get_model(num_classes, chosen_backbone)
+    model = get_model(num_classes, chosen_backbone, aspect_ratios)
     #model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights="DEFAULT")
 
     # Load pretrained weights if specified
@@ -137,6 +142,7 @@ def main(args):
             momentum=args.momentum,
             weight_decay=args.weight_decay
         )
+
 
     # and a learning rate scheduler
     lr_scheduler = torch.optim.lr_scheduler.StepLR(
@@ -223,6 +229,7 @@ def parse_args(argv=None):
     parser.add_argument("--epochs", type=int, default=3, help="Number of epochs to train")
     parser.add_argument("--backbone", type=str, default="mobilenet_v2", help="Backbone for the model")
     parser.add_argument("--base_lr", type=float, default=0.001, help="Base learning rate for the optimizer")
+    parser.add_argument("--aspect_ratios", type=list, default=[0.5,1,2], help="Aspect ratios for anchor generator")
     parser.add_argument("--momentum", type=float, default=0.9, help="Momentum for the optimizer")
     parser.add_argument("--weight_decay", type=float, default=0.001, help="Weight decay for the optimizer")
     parser.add_argument("--optimizer", type=str, default="SGD", help="Choose between 'SGD', 'Adam' and 'AdamW' optimizers")

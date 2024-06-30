@@ -32,6 +32,15 @@ def train_notebook(run_name, args):
         print("Error in the arguments")
         print(e)
 
+
+def parse_list(arglist):
+    arglist = "".join(arglist)
+    arglist = arglist.replace("[","")
+    arglist = arglist.replace("]","")
+    arglist = arglist.split(",")
+    arglist = [float(arg) for arg in arglist]
+    return arglist
+
 from torchvision.transforms import v2 as T
 
 from torch.cuda import empty_cache
@@ -95,9 +104,12 @@ def main(args):
     chosen_backbone = args.backbone.lower()
 
     if args.aspect_ratios:
-        aspect_ratios = tuple(args.aspect_ratios)
+        aspect_ratios = parse_list(args.aspect_ratios)
+        aspect_ratios = tuple(aspect_ratios)
     else:
         aspect_ratios = (0.5, 1.0, 2.0)
+
+    print(type(aspect_ratios), aspect_ratios)
 
     # get the model using our helper function
     model = get_model(num_classes, chosen_backbone, aspect_ratios)
@@ -142,7 +154,6 @@ def main(args):
             momentum=args.momentum,
             weight_decay=args.weight_decay
         )
-
 
     # and a learning rate scheduler
     lr_scheduler = torch.optim.lr_scheduler.StepLR(

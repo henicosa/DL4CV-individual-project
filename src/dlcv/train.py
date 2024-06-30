@@ -9,6 +9,7 @@ import torch
 from dlcv.utils import *
 from dlcv.detection.engine import train_one_epoch, evaluate
 import os
+from dlcv.schedule import WarmupThenScheduler
 
 
 def train_notebook(run_name, args):
@@ -109,8 +110,6 @@ def main(args):
     else:
         aspect_ratios = (0.5, 1.0, 2.0)
 
-    print(type(aspect_ratios), aspect_ratios)
-
     # get the model using our helper function
     model = get_model(num_classes, chosen_backbone, aspect_ratios)
     #model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights="DEFAULT")
@@ -155,11 +154,29 @@ def main(args):
             weight_decay=args.weight_decay
         )
 
-    # and a learning rate scheduler
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(
+    if args.lr_scheduler == "StepLR":
+        # Create a learning rate scheduler
+        post_warmup_scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer,
+            step_size=args.scheduler_step_size,
+            gamma=args.scheduler_gamma
+        )
+
+    elif args.lr_scheduler == "ReduceLROnPlateau":
+        # Create a learning rate scheduler
+        post_warmup_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="min",
+            factor=args.scheduler_gamma,
+            patience=args.scheduler_step_size,
+            verbose=True
+        )
+
+
+    lr_scheduler = WarmupThenScheduler(
         optimizer,
-        step_size=3,
-        gamma=0.1
+        warmup_steps=args.warmup_steps,
+        post_warmup_scheduler=post_warmup_scheduler
     )
 
     num_epochs = args.epochs
@@ -170,11 +187,16 @@ def main(args):
         clear_memory()
         train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=10)
         
-        # update the learning rate
-        lr_scheduler.step()
         # evaluate on the test dataset
         cocoeval = evaluate(model, data_loader_val, device=device)
-        mAPs.append(cocoeval.coco_eval["bbox"].stats[0])
+        metric = cocoeval.coco_eval["bbox"].stats[0]
+        mAPs.append(metric)
+
+        # update the learning rate
+        if args.lr_scheduler == "ReduceLROnPlateau":
+            lr_scheduler.step(metric)
+        else:
+            lr_scheduler.step()
 
     plot_mAP(mAPs, os.path.join(output_path, "performance"), args.run_name)
 
@@ -245,6 +267,9 @@ def parse_args(argv=None):
     parser.add_argument("--weight_decay", type=float, default=0.001, help="Weight decay for the optimizer")
     parser.add_argument("--optimizer", type=str, default="SGD", help="Choose between 'SGD', 'Adam' and 'AdamW' optimizers")
     parser.add_argument("--stratification_rates", type=str, default=None, help="Dictionary of stratification rates")
+    parser.add_argument("--scheduler_step_size", type=int, default=3, help="Step size for the learning rate scheduler")
+    parser.add_argument("--scheduler_gamma", type=float, default=0.1, help="Gamma for the learning rate scheduler")
+    parser.add_argument("--warmup_steps", type=int, default=0, help="Number of warmup steps for the learning rate scheduler")
     parser.add_argument("--horizontal_flip_prob", type=float, default=0.0, help="Probability of applying horizontal flip; 0 means no horizontal flip")
     parser.add_argument("--rotation_degrees", type=float, default=0.0, help="Max degrees to rotate; 0 means no rotation")
     parser.add_argument("--results_csv", type=str, default="results", help="Directory to save the CSV file of training results")

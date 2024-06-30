@@ -269,6 +269,7 @@ def parse_args(argv=None):
     parser.add_argument("--stratification_rates", type=str, default=None, help="Dictionary of stratification rates")
     parser.add_argument("--scheduler_step_size", type=int, default=3, help="Step size for the learning rate scheduler")
     parser.add_argument("--scheduler_gamma", type=float, default=0.1, help="Gamma for the learning rate scheduler")
+    parser.add_argument("--lr_scheduler", type=str, default="StepLR", help="Choose between 'StepLR' and 'ReduceLROnPlateau' schedulers")
     parser.add_argument("--warmup_steps", type=int, default=0, help="Number of warmup steps for the learning rate scheduler")
     parser.add_argument("--horizontal_flip_prob", type=float, default=0.0, help="Probability of applying horizontal flip; 0 means no horizontal flip")
     parser.add_argument("--rotation_degrees", type=float, default=0.0, help="Max degrees to rotate; 0 means no rotation")

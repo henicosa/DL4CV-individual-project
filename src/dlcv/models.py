@@ -5,7 +5,7 @@ import torch.nn as nn
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 
 
-def get_model(num_classes, chosen_backbone):
+def get_model(num_classes, chosen_backbone, aspect_ratios):
     # load a pre-trained model for classification and return
     # only the features
 

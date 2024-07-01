@@ -60,7 +60,7 @@ def main(args):
             if args.horizontal_flip_prob:
                 transforms.append(T.RandomHorizontalFlip(args.horizontal_flip_prob))
             if args.random_resized_crop:
-                transforms.append(T.RandomResizedCrop(args.random_resized_crop), antialias=True)
+                transforms.append(T.RandomResizedCrop(args.random_resized_crop, antialias=True))
         transforms.append(T.ToDtype(torch.float, scale=True))
         return T.Compose(transforms)
     

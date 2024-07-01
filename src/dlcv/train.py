@@ -55,9 +55,12 @@ def main(args):
 
     def get_transform(train):
         transforms = []
+        transforms.append(T.ToDtype(torch.uint8, scale=True))
         if train:
             if args.horizontal_flip_prob:
                 transforms.append(T.RandomHorizontalFlip(args.horizontal_flip_prob))
+            if args.random_resized_crop:
+                transforms.append(T.RandomResizedCrop(args.random_resized_crop), antialias=True)
         transforms.append(T.ToDtype(torch.float, scale=True))
         return T.Compose(transforms)
     
@@ -272,7 +275,8 @@ def parse_args(argv=None):
     parser.add_argument("--lr_scheduler", type=str, default="StepLR", help="Choose between 'StepLR' and 'ReduceLROnPlateau' schedulers")
     parser.add_argument("--warmup_steps", type=int, default=0, help="Number of warmup steps for the learning rate scheduler")
     parser.add_argument("--horizontal_flip_prob", type=float, default=0.0, help="Probability of applying horizontal flip; 0 means no horizontal flip")
-    parser.add_argument("--rotation_degrees", type=float, default=0.0, help="Max degrees to rotate; 0 means no rotation")
+    parser.add_argument("--random_resized_crop", type=bool, default=False, help="Apply random resized crop")
+    #parser.add_argument("--rotation_degrees", type=float, default=0.0, help="Max degrees to rotate; 0 means no rotation")
     parser.add_argument("--results_csv", type=str, default="results", help="Directory to save the CSV file of training results")
     parser.add_argument("--save_model_path", type=str, default="saved_models", help="Directory to save the trained model")
     parser.add_argument("--output_path", type=str, default="output", help="Directory to save all outputs")

@@ -254,7 +254,7 @@ def parse_args(argv=None):
     # Add arguments
     parser.add_argument("--root", type=str, default="data", help="Root directory of the dataset")
     parser.add_argument("--subset_size", type=str, default=None, help="Number of samples to use from the dataset")
-    parser.add_argument("--batch_size", type=int, default=64, help="Batch size for training and evaluation")
+    parser.add_argument("--batch_size", type=int, default=2, help="Batch size for training and evaluation")
     parser.add_argument("--conv_layers", type=int, default=2, help="Number of convolutional layers", choices=[2,3])
     parser.add_argument("--filters_conv1", type=int, default=16, help="Number of filters in the first conv layer")
     parser.add_argument("--filters_conv2", type=int, default=32, help="Number of filters in the second conv layer")

@@ -66,23 +66,31 @@ This is the default configuration in the YAML format. You can include any option
 # config.yaml
 DATA:
   ROOT: "data"
-  BATCH_SIZE: 64
+  BATCH_SIZE: 2
 
 MODEL:
   PRETRAINED_WEIGHTS: null
   FREEZE_LAYERS: "0"
+  BACKBONE: "mobilenet_v2"
+  ASPECT_RATIOS: [0.5, 1.0, 2.0]
 
 TRAINING:
   EPOCHS: 3
   BASE_LR: 0.001
-  DO_EARLY_STOPPING: false
+  STRATIFICATION_RATES: false
+  MOMENTUM: 0.09
+  WEIGHT_DECAY: 0.001
+  OPTIMIZER: "SGD"
+  LR_SCHEDULER: "StepLR"
+  SCHEDULER_STEP_SIZE: 3
+  SCHEDULER_GAMMA: 0.1
+  WARMUP_STEPS: 0
 
 AUGMENTATION:
   HORIZONTAL_FLIP_PROB: 0.0
 
 OUTPUT:
-  RESULTS_CSV: "results"
-  SAVE_MODEL_PATH: "saved_models"
+  OUTPUT_PATH: "output"
 
 SYSTEM:
   NO_CUDA: false
@@ -118,6 +126,14 @@ This section contains hyper-parameters related to the model's architecture and i
   - **Type**: String
   - **Effect**: Freezes the specified layers, preventing their weights from being updated during training. Useful for transfer learning to retain pretrained features.
 
+- `BACKBONE` (default: `"mobilenet_v2"`): The name of the backbone that should be used. Available backbones are "mobilenet_v2", "resnet101" and "squeezenet1_1"
+  - **Type**: String
+  - **Effect**: Changes the backbone of the model.
+
+- `ASPECT_RATIOS` (default: `"[0.5, 1.0, 20]"`): A comma-separated list of aspect ratios.
+  - **Type**: String
+  - **Effect**: Changes the aspect ratios of the anchor generator used for the backbone.
+
 ## TRAINING
 
 This section contains hyper-parameters related to the training process.
@@ -147,10 +163,22 @@ This section contains hyper-parameters related to the training process.
   - **Possible Values**: `"SGD"`, `"Adam"`, `"AdamW"`
   - **Effect**: Determines the optimization algorithm used for updating model weights. Different optimizers have various convergence properties and performance characteristics.
 
-- `BACKBONE` (default: `"mobilenet_v2"`): The backbone network to be used in the model.
+- `LR_SCHEDULER` (default: `"StepLR"`): The learning rate scheduler to use during training.
   - **Type**: String
-  - **Possible Values**: `"mobilenet_v2"`, `"resnet50"`, `"resnet101"`
-  - **Effect**: The backbone network extracts features from images. Choosing a different backbone can affect the model’s performance and computational requirements.
+  - **Possible Values**: `"StepLR"`, `"ReduceLROnPlateau"`
+  - **Effect**: Controls the adjustment of the learning rate during training to improve convergence and performance. Different schedulers adjust the learning rate in different ways based on the specified schedule.
+
+- `SCHEDULER_STEP_SIZE` (default: `3`): Step size for the learning rate scheduler.
+  - **Type**: Integer
+  - **Effect**: Specifies the number of epochs between each learning rate decay step when using the `StepLR` scheduler. At each step, the learning rate is adjusted by multiplying with `SCHEDULER_GAMMA`.
+
+- `SCHEDULER_GAMMA` (default: `0.1`): Multiplicative factor for learning rate decay.
+  - **Type**: Float
+  - **Effect**: Determines the factor by which the learning rate is multiplied at each step. For example, with `StepLR`, the learning rate is multiplied by `SCHEDULER_GAMMA` every `SCHEDULER_STEP_SIZE` epochs, effectively reducing the learning rate to help the model converge more smoothly.
+
+- `WARMUP_STEPS` (default: `0`): Number of warmup steps for learning rate scheduling.
+  - **Type**: Integer
+  - **Effect**: Defines the number of steps or epochs at the beginning of training during which the learning rate is increased linearly from a low initial value to the initial learning rate specified by the optimizer. Warmup helps in stabilizing the training process, particularly at the start.
 
 ## AUGMENTATION
 
@@ -206,15 +234,168 @@ Please refer to this table to attribute the category to the bounding box display
 
 # 7. Experiments
 
-## 7.1. Optimizer
+## 7.1. Optimizer Comparison
 
-- [Link to Experiment 1](https://www.kaggle.com/code/henicosa/dl4cv-individual-project?scriptVersionId=185793029)
+### Setting
 
-In this experiment three different optimizers were compared: SDG, Adam and AdamW.
+**Target**: This experiment focused on evaluating the impact of different optimizers **SGD**, **Adam**, and **AdamW** on model performance. The choice of optimizer can significantly influence the training dynamics, convergence speed, and final model accuracy. Specifically, the experiment aimed to understand how each optimizer, with the same base learning rate and weight decay, affects the training outcome.
+
+**Link**: [Kaggle: Experiment 1](https://www.kaggle.com/code/henicosa/dl4cv-individual-project?scriptVersionId=185793029)
+
+### Optimizer Overview
+
+**SGD (Stochastic Gradient Descent)**:
+- **Overview**: SGD updates the parameters by following the negative gradient of the loss function. It is a straightforward optimization algorithm with the option to include momentum, which helps to accelerate convergence by navigating along the relevant direction and dampening oscillations.
+- **Link**: [PyTorch SGD](https://pytorch.org/docs/stable/generated/torch.optim.SGD.html)
+
+**Adam (Adaptive Moment Estimation)**:
+- **Overview**: Adam combines the advantages of two other extensions of stochastic gradient descent: AdaGrad and RMSProp. It computes individual adaptive learning rates for different parameters from estimates of first and second moments of the gradients, making it particularly effective for sparse gradients and noisy problems.
+- **Link**: [PyTorch Adam](https://pytorch.org/docs/stable/generated/torch.optim.Adam.html)
+
+**AdamW (Adam with Weight Decay Regularization)**:
+- **Overview**: AdamW modifies the typical Adam optimizer by decoupling the weight decay from the gradient-based update, which helps in achieving better generalization by preventing the weight decay from being included in the momentum term.
+- **Link**: [PyTorch AdamW](https://pytorch.org/docs/stable/generated/torch.optim.AdamW.html)
+
+
+### Shared Configuration
+
+```
+# config.yaml
+DATA:
+  ROOT: "/kaggle/input/construction-industry-steel-ordering-lists-cisol/cisol_TD-TSR/TD-TSR/"
+
+OUTPUT:
+  OUTPUT_PATH: "/kaggle/working/"
+
+TRAINING:
+  BASE_LR: 0.001
+  WEIGHT_DECAY: 0.01
+  MOMENTUM: 0.9
+  EPOCHS: 7
+```
+
+### Results
 
 ![Plot](doc/exp1.png)
 
-The training run `AdamW` was submitted under the university username `viji5369` on the evalAI CISOL leaderboard and scored mAP = 50.16%.
+| Property      | SGD   | Adam  | AdamW |
+| :------------ | :---- | :---- | :---- |
+| Learning Rate | 0.001 | 0.001 | 0.001 |
+| Weight Decay  | 0.01  | 0.01  | 0.01  |
+| Momentum      | 0.9   | -     | -     |
+| Final mAP     | 0.071 | 0.458 | 0.521 |
+
+
+The results demonstrated that both Adam and AdamW significantly outperformed SGD in terms of model performance. As expercted, AdamW showed a slight edge over Adam in achieving better accuracy and stability during training. In contrast, SGD, despite the momentum parameter, lagged behind the adaptive optimizers.
+
+### Interpretation
+
+The experiment indicates that Adam and AdamW are more effective than SGD under the given training conditions, primarily due to their adaptive learning rate mechanisms, which help in faster and more stable convergence. However, the comparison might be slightly unfair to SGD, as the optimizer's sensitivity to weight decay differs from that of Adam and AdamW. The superior performance of AdamW over Adam suggests that decoupling weight decay from the learning rate, as implemented in AdamW, can lead to better generalization and overall performance.
+
+## 7.2. AdamW Weight Decay
+
+- No significant results
+
+## 7.3. Backbone Comparison
+
+### Setting
+
+**Target**: This experiment aimed to evaluate the performance of different neural network backbones—MobileNetV2, SqueezeNet 1.1, and ResNet101—in a classification task. The backbone architecture can greatly influence the feature extraction capabilities and overall model accuracy. ResNet101 was connected to the model by extracting the [convolution feature map](https://stackoverflow.com/questions/58362892/resnet-18-as-backbone-in-faster-r-cnn).
+
+**Link**: [Kaggle: Experiment 3](https://www.kaggle.com/code/henicosa/dl4cv-individual-project?scriptVersionId=186043012)
+
+### Backbone Overview
+
+**MobileNetV2**:
+- **Overview**: MobileNetV2 is a lightweight convolutional neural network designed for mobile and resource-constrained environments. It uses depthwise separable convolutions and an inverted residual structure to achieve high efficiency and performance.
+- **Link**: [PyTorch MobileNetV2](https://pytorch.org/vision/stable/models/mobilenetv2.html)
+
+**SqueezeNet 1.1**:
+- **Overview**: SqueezeNet is designed to achieve AlexNet-level accuracy with 50x fewer parameters, making it highly efficient. It uses Fire modules, which consist of squeeze and expand layers, to reduce the number of parameters.
+- **Link**: [PyTorch SqueezeNet](https://pytorch.org/vision/stable/models/squeezenet.html)
+
+**ResNet101**:
+- **Overview**: ResNet101 is a deep convolutional neural network with 101 layers, utilizing residual connections to ease the training of very deep networks. These residual connections help mitigate the vanishing gradient problem, enabling the network to learn more complex features.
+- **Link**: [PyTorch ResNet101](https://pytorch.org/vision/stable/models/resnet.html)
+
+### Shared Configuration
+
+```
+# config.yaml
+DATA:
+  ROOT: "/kaggle/input/construction-industry-steel-ordering-lists-cisol/cisol_TD-TSR/TD-TSR/"
+
+OUTPUT:
+  OUTPUT_PATH: "/kaggle/working/"
+
+TRAINING:
+  OPTIMIZER: "AdamW"
+  BASE_LR: 0.001
+  WEIGHT_DECAY: 0.015
+  EPOCHS: 15
+```
+
+### Results
+
+![Plot](doc/exp3.png)
+
+| Property      | Mobilenet v2   | Squeezenet 1.1  | AdamW |
+| :------------ | :---- | :---- | :---- |
+| Final mAP     | 0.535 | 0.394 | 0.573 |
+| Training Time | 1:26 h |  1:04 h | 2:10 h |
+
+The results indicated that SqueezeNet 1.1 scored significantly lower compared to both MobileNetV2 and ResNet101. Among the latter two, ResNet101 demonstrated a slight performance advantage over MobileNetV2.
+
+### Interpretation
+
+The inferior performance of SqueezeNet 1.1 can be attributed to its design, which focuses on reducing the model size and computational cost, potentially at the expense of accuracy. On the other hand, MobileNetV2 and ResNet101 are more robust in feature extraction due to their more complex architectures.
+
+The depth of ResNet101 allows it to learn more abstract representations, which generally contribute to better accuracy, albeit with increased computational requirements compared to MobileNetV2.
+
+## 7.4. Aspect Ratios
+
+### Setting
+
+**Target**: This experiment aimed to assess the impact of changing the aspect ratios of the anchor generator on the performance of a detection model. The hypothesis was that aspect ratios resulting in longer boxes would better fit the objects in the dataset, which involve identifying rows and columns.
+
+**Link**: [Kaggle: Your Home for Data Science](https://www.kaggle.com/code/henicosa/dl4cv-individual-project?scriptVersionId=186285151)
+
+### Shared Configuration
+
+```
+# config.yaml
+DATA:
+  ROOT: "/kaggle/input/construction-industry-steel-ordering-lists-cisol/cisol_TD-TSR/TD-TSR/"
+
+OUTPUT:
+  OUTPUT_PATH: "/kaggle/working/"
+
+MODEL:
+  BACKBONE: "resnet101"
+
+TRAINING:
+  OPTIMIZER: "AdamW"
+  BASE_LR: 0.001
+  WEIGHT_DECAY: 0.01
+  EPOCHS: 7
+```
+
+### Results
+
+![Plot](doc/exp_4.png)
+
+
+| Property  | [0.5, 1, 2] | [0.33, 1, 3] | [0.33, 0.5, 1, 2, 3] |
+| :-------- | :---------- | :----------- | :------------------- |
+| Final mAP | 0.557       | 0.56         | 0.52                 |
+
+
+The results showed a very slight but negligible advantage for the aspect ratios resulting in longer boxes. However, when comparing the bounding box visualizations, the predicted boxes with the longer aspect ratios appeared to be more aligned with the rows and columns of the dataset.
+
+### Interpretation
+
+Although the quantitative performance improvement was minimal, the qualitative assessment of bounding box visualizations suggests that aspect ratios tailored to the specific shapes of the objects in the dataset (rows and columns) can lead to more accurate detections. The longer aspect ratios helped the predicted boxes to better match the actual objects, indicating that aspect ratio customization is a valuable consideration for datasets with specific object shapes.
+
 
 # 8. License
 
